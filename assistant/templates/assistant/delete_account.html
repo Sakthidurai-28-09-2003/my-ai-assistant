@@ -1,0 +1,108 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Delete Account | My AI</title>
+
+    <script>
+        (function () {
+            const theme =
+                localStorage.getItem("theme") || "light";
+
+            document.documentElement.setAttribute(
+                "data-theme",
+                theme
+            );
+        })();
+    </script>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'assistant/style.css' %}"
+    >
+
+</head>
+
+<body>
+
+<div class="delete-account-page">
+
+    <div class="delete-account-card">
+
+        <div class="danger-icon">
+            !
+        </div>
+
+        <h1>Delete account?</h1>
+
+        <p class="delete-warning">
+            This action is permanent. Your account,
+            profile and conversations will be deleted.
+        </p>
+
+        {% if error %}
+
+            <div class="form-message form-error">
+                {{ error }}
+            </div>
+
+        {% endif %}
+
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <label for="password">
+                Enter your password to continue
+            </label>
+
+            <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Your password"
+                required
+            >
+
+            <div class="delete-account-actions">
+
+                <a
+                    href="{% url 'settings' %}"
+                    class="cancel-delete"
+                >
+                    Cancel
+                </a>
+
+                <button
+                    type="submit"
+                    class="confirm-delete"
+                    onclick="
+                        return confirm(
+                            'Are you absolutely sure? This cannot be undone.'
+                        );
+                    "
+                >
+                    Permanently Delete
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

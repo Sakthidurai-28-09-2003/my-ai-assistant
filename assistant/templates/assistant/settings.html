@@ -1,0 +1,266 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Settings | My AI</title>
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme") || "light";
+
+            document.documentElement.setAttribute(
+                "data-theme",
+                theme
+            );
+        })();
+    </script>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'assistant/style.css' %}"
+    >
+</head>
+
+<body>
+
+<div class="settings-shell">
+
+    <header class="settings-topbar">
+
+        <a href="{% url 'home' %}" class="settings-back">
+            ← Back to My AI
+        </a>
+
+        <div class="settings-brand">
+            ✦ My AI
+        </div>
+
+    </header>
+
+
+    <main class="settings-wrapper">
+
+        <section class="settings-panel">
+
+            <div class="settings-heading">
+                <h1>Settings</h1>
+                <p>Manage your account and preferences.</p>
+            </div>
+
+
+            {% if error %}
+                <div class="form-message form-error">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+
+            {% if success %}
+                <div class="form-message form-success">
+                    {{ success }}
+                </div>
+            {% endif %}
+
+
+            <div class="settings-section">
+
+                <h2>Account</h2>
+
+                <div class="settings-row">
+
+                    <div>
+                        <strong>Username</strong>
+                        <p>{{ request.user.username }}</p>
+                    </div>
+
+                    <a href="{% url 'edit_profile' %}">
+                        Edit
+                    </a>
+
+                </div>
+
+
+                <div class="settings-row">
+
+                    <div>
+                        <strong>Email</strong>
+                        <p>{{ request.user.email }}</p>
+                    </div>
+
+                    <a href="{% url 'edit_profile' %}">
+                        Edit
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="settings-section">
+
+                <h2>Appearance</h2>
+
+                <div class="settings-row">
+
+                    <div>
+                        <strong>Theme</strong>
+                        <p>Choose how My AI looks.</p>
+                    </div>
+
+                    <select id="theme-select">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="system">System</option>
+                    </select>   
+
+                </div>
+
+                <small class="settings-note">
+                    Dark mode will be connected next.
+                </small>
+
+            </div>
+
+
+            <div class="settings-section">
+
+                <h2>Change Password</h2>
+
+                <form method="POST" class="settings-form">
+
+                    {% csrf_token %}
+
+                    <input
+                        type="hidden"
+                        name="action"
+                        value="change_password"
+                    >
+
+                    <div class="form-group">
+
+                        <label>
+                            Current password
+                        </label>
+
+                        <input
+                            type="password"
+                            name="current_password"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            New password
+                        </label>
+
+                        <input
+                            type="password"
+                            name="new_password"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Confirm new password
+                        </label>
+
+                        <input
+                            type="password"
+                            name="confirm_password"
+                            required
+                        >
+
+                    </div>
+
+
+                    <button type="submit" class="settings-save">
+                        Update Password
+                    </button>
+
+                </form>
+
+            </div>
+
+
+            <div class="settings-section danger-section">
+
+                <h2>Session</h2>
+
+                <a
+                    href="{% url 'logout' %}"
+                    class="settings-logout"
+                >
+                    Logout
+                </a>
+
+                <div class="settings-section danger-section">
+
+                    <h2>Danger Zone</h2>
+
+                    <div class="settings-row">
+
+                        <div>
+                            <strong>Delete Account</strong>
+
+                            <p>
+                                Permanently delete your account
+                                and conversation history.
+                            </p>
+                        </div>
+
+                        <a
+                            href="{% url 'delete_account' %}"
+                            class="delete-account-link"
+                        >
+                            Delete Account
+                        </a>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+
+<script>
+const themeSelect = document.getElementById("theme-select");
+
+function applyTheme(theme) {
+    document.documentElement.setAttribute("data-theme", theme);
+}
+
+const savedTheme = localStorage.getItem("theme") || "light";
+
+themeSelect.value = savedTheme;
+applyTheme(savedTheme);
+
+themeSelect.addEventListener("change", function () {
+    const selectedTheme = this.value;
+
+    localStorage.setItem("theme", selectedTheme);
+
+    applyTheme(selectedTheme);
+});
+</script>
+
+</body>
+</html>

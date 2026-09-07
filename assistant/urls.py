@@ -1,0 +1,86 @@
+from django.urls import path
+from . import views
+from django.contrib.auth import views as auth_views
+
+urlpatterns = [
+    path("", views.home, name="home"),
+
+    path(
+        "chat/<int:conversation_id>/",
+        views.home,
+        name="conversation"
+    ),
+
+    path("register/", views.register_view, name="register"),
+    path("login/", views.login_view, name="login"),
+    path("logout/", views.logout_view, name="logout"),
+    path("profile/", views.profile_view, name="profile"),
+    path("profile/edit/", views.edit_profile_view, name="edit_profile"),
+    path(
+    "chat/<int:conversation_id>/delete/",
+    views.delete_conversation,
+    name="delete_conversation"
+    ),
+    path(
+    "chat/<int:conversation_id>/rename/",
+    views.rename_conversation,
+    name="rename_conversation"
+    ),
+    path("settings/", views.settings_view, name="settings"),
+    path(
+    "password-reset/",
+    auth_views.PasswordResetView.as_view(
+        template_name="assistant/password_reset.html",
+        email_template_name="registration/password_reset_email.html",
+        extra_email_context={
+            "protocol": "http",
+        },
+    ),
+    name="password_reset",
+),
+
+path(
+    "password-reset/done/",
+    auth_views.PasswordResetDoneView.as_view(
+        template_name="assistant/password_reset_done.html"
+    ),
+    name="password_reset_done"
+),
+
+path(
+    "reset/<uidb64>/<token>/",
+    auth_views.PasswordResetConfirmView.as_view(
+        template_name="assistant/password_reset_confirm.html"
+    ),
+    name="password_reset_confirm"
+),
+
+path(
+    "reset/done/",
+    auth_views.PasswordResetCompleteView.as_view(
+        template_name="assistant/password_reset_complete.html"
+    ),
+    name="password_reset_complete"
+),
+path(
+    "account/delete/",
+    views.delete_account_view,
+    name="delete_account"
+),
+path(
+    "chat/<int:conversation_id>/regenerate/",
+    views.regenerate_response,
+    name="regenerate_response"
+),
+path(
+    "transcribe/",
+    views.transcribe_audio,
+    name="transcribe_audio"
+),
+path(
+    "chat/<int:conversation_id>/export/",
+    views.export_conversation,
+    name="export_conversation"
+),
+    
+]

@@ -1,0 +1,888 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My AI</title>
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme") || "light";
+
+            document.documentElement.setAttribute(
+                "data-theme",
+                theme
+            );
+        })();
+    </script>
+
+    <link rel="stylesheet" href="{% static 'assistant/style.css' %}">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+
+        <div class="logo">
+            ✦ My AI
+        </div>
+
+        <button class="new-chat"onclick="window.location.href='{% url 'home' %}'">
+            + New Chat
+        </button>
+
+
+        <div class="chat-search-box">
+            <span>⌕</span>
+
+            <input
+                type="text"
+                id="chat-search"
+                placeholder="Search chats..."
+                autocomplete="off"
+            >
+        </div>
+
+        <div class="history">
+            <p class="history-title">RECENT</p>
+
+            {% for chat in conversations %}
+
+                <div
+                    class="history-row"
+                    data-chat-title="{{ chat.title|lower }}"
+                >
+
+                    <a
+                        href="{% url 'conversation' chat.id %}"
+                        class="history-item"
+                    >
+                        💬 {{ chat.title }}
+                    </a>
+
+                    <button
+                        type="button"
+                        class="rename-chat-btn"
+                        onclick="openRename('{{ chat.id }}', '{{ chat.title|escapejs }}')"
+                        title="Rename chat"
+                    >
+                        ✎
+                    </button>
+
+                    <form
+                        method="POST"
+                        action="{% url 'delete_conversation' chat.id %}"
+                        class="delete-chat-form"
+                    >
+
+                        {% csrf_token %}
+
+                        <button
+                            type="submit"
+                            class="delete-chat-btn"
+                            title="Delete chat"
+                            onclick="return confirm('Delete this conversation?');"
+                        >
+                            ×
+                        </button>
+
+                    </form>
+
+                </div>
+
+                {% endfor %}
+        </div>
+
+        <a href="{% url 'profile' %}" class="sidebar-bottom profile-link">
+
+            <div class="profile-circle">
+
+                {% if profile.avatar %}
+                    <img
+                        src="{{ profile.avatar.url }}"
+                        alt="Profile picture"
+                        class="sidebar-avatar-img"
+                    >
+                {% else %}
+                    {{ request.user.username|first|upper }}
+                {% endif %}
+
+            </div>
+
+            <div>
+                <strong>{{ request.user.username }}</strong>
+                <small>{{ request.user.email }}</small>
+            </div>
+
+        </a>
+
+    </aside>
+
+
+    <!-- MAIN CHAT -->
+    <main class="chat">
+
+        <!-- HEADER -->
+        <header class="chat-header">
+
+            <button
+                class="menu-button"
+                id="menu-button"
+                type="button"
+            >
+                ☰
+            </button>
+
+            <div>
+                <strong>My AI</strong>
+
+                <span class="status">
+                    ● Online
+                </span>
+            </div>
+
+
+            {% if conversation %}
+                <a
+                    href="{% url 'export_conversation' conversation.id %}"
+                    class="export-chat-btn"
+                    title="Export conversation"
+                >
+                    Export
+                </a>
+            {% endif %}
+
+        </header>
+
+
+        <!-- MESSAGES -->
+        <section class="messages" id="messages">
+
+            {% if not conversation %}
+
+                <div class="welcome">
+
+                    <div class="ai-logo">
+                        ✦
+                    </div>
+
+                    <h1>How can I help you?</h1>
+
+                    <p>
+                        Ask a question, explore an idea,
+                        or get help with something.
+                    </p>
+
+                </div>
+
+            {% else %}
+
+                {% for message in messages %}
+
+                    {% if message.role == "user" %}
+
+                        <div class="message user-message">
+
+                            <div class="avatar user-avatar">
+
+                                {% if profile.avatar %}
+                                    <img
+                                        src="{{ profile.avatar.url }}"
+                                        alt="You"
+                                        class="chat-avatar-img"
+                                    >
+                                {% else %}
+                                    {{ request.user.username|first|upper }}
+                                {% endif %}
+
+                            </div>
+
+                           <div class="bubble user-bubble">
+
+                                {% if message.attachment %}
+
+                                    {% with filename=message.attachment.name|lower %}
+
+                                        {% if ".jpg" in filename or ".jpeg" in filename or ".png" in filename or ".webp" in filename %}
+
+                                            <div class="chat-image">
+                                                <img
+                                                    src="{{ message.attachment.url }}"
+                                                    alt="Uploaded image"
+                                                >
+                                            </div>
+
+                                        {% else %}
+
+                                            <a
+                                                href="{{ message.attachment.url }}"
+                                                class="chat-file"
+                                                target="_blank"
+                                            >
+                                                📎 {{ message.attachment.name }}
+                                            </a>
+
+                                        {% endif %}
+
+                                    {% endwith %}
+
+                                {% endif %}
+
+
+                                {% if message.content %}
+                                    {{ message.content }}
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    {% else %}
+
+                        <div class="message ai-message">
+
+                            <div class="avatar ai-avatar">
+                                ✦
+                            </div>
+
+                            <div class="ai-response-container">
+
+                                <div class="bubble ai-bubble">
+                                    {{ message.rendered_content|safe }}
+                                </div>
+
+                               <div class="message-actions">
+
+                                    <button
+                                        type="button"
+                                        class="copy-response-btn"
+                                        onclick="copyResponse(this)"
+                                    >
+                                        ⧉ Copy
+                                    </button>
+
+                                    {% if conversation and forloop.last %}
+
+                                        <form
+                                            method="POST"
+                                            action="{% url 'regenerate_response' conversation.id %}"
+                                            class="regenerate-form"
+                                        >
+
+                                            {% csrf_token %}
+
+                                            <button
+                                                type="submit"
+                                                class="regenerate-btn"
+                                            >
+                                                ↻ Regenerate
+                                            </button>
+
+                                        </form>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- INPUT -->
+        <div class="input-area">
+
+            <form
+                method="POST"
+                enctype="multipart/form-data"
+                class="chat-form"
+                id="chat-form"
+            >
+
+                {% csrf_token %}
+
+                <label
+                    for="attachment"
+                    class="attachment-btn"
+                    title="Attach file"
+                >
+                    +
+                </label>
+
+                <input
+                    type="file"
+                    id="attachment"
+                    name="attachment"
+                    accept=".pdf,.txt,.png,.jpg,.jpeg,.webp"
+                    hidden
+                >
+
+                <textarea
+                    name="message"
+                    id="message-input"
+                    placeholder="Message My AI..."
+                    rows="1"
+                    required
+                    autofocus
+                ></textarea>
+
+
+                <button
+                    type="button"
+                    class="voice-button"
+                    id="voice-button"
+                    title="Voice input"
+                >
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="22"></line>
+                        <line x1="8" y1="22" x2="16" y2="22"></line>
+                    </svg>
+                </button>
+
+                <div id="recording-indicator" class="recording-indicator">
+                    <span class="recording-dot"></span>
+
+                    <div class="recording-bars">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+
+                    <span class="recording-text">
+                        Recording
+                    </span>
+                </div>
+
+                <button
+                    type="submit"
+                    class="send-button"
+                    id="send-button">
+
+                    ➤
+
+                </button>
+
+            </form>
+
+            <div id="file-preview" class="file-preview"></div>
+
+            <div
+                id="thinking-indicator"
+                class="thinking-indicator"
+                aria-live="polite"
+            >
+                <span></span>
+                <span></span>
+                <span></span>
+                <p>My AI is thinking...</p>
+            </div>
+
+            <p class="disclaimer">
+                AI can make mistakes. Check important information.
+            </p>
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<script>
+
+const textarea = document.getElementById("message-input");
+const form = document.getElementById("chat-form");
+const sendButton = document.getElementById("send-button");
+
+
+/* AUTO RESIZE TEXTAREA */
+
+textarea.addEventListener("input", function () {
+
+    this.style.height = "auto";
+
+    this.style.height =
+        Math.min(this.scrollHeight, 160) + "px";
+
+});
+
+
+/* ENTER = SEND
+   SHIFT + ENTER = NEW LINE */
+
+textarea.addEventListener("keydown", function(event) {
+
+    if (
+        event.key === "Enter" &&
+        !event.shiftKey
+    ) {
+
+        event.preventDefault();
+
+        if (textarea.value.trim() !== "") {
+            form.requestSubmit();
+        }
+
+    }
+
+});
+
+
+/* SHOW LOADING STATE */
+
+form.addEventListener("submit", function() {
+
+    sendButton.disabled = true;
+
+    sendButton.innerHTML = "•••";
+
+    const thinkingIndicator =
+        document.getElementById("thinking-indicator");
+
+    thinkingIndicator.classList.add("show");
+});
+
+
+/* SCROLL TO LATEST MESSAGE */
+
+window.addEventListener("load", function() {
+
+    const messages =
+        document.getElementById("messages");
+
+    messages.scrollTop =
+        messages.scrollHeight;
+
+});
+
+
+
+function openRename(chatId, currentTitle) {
+
+    const modal = document.getElementById("rename-modal");
+    const input = document.getElementById("rename-input");
+    const form = document.getElementById("rename-form");
+
+    input.value = currentTitle;
+
+    form.action = "/chat/" + chatId + "/rename/";
+
+    modal.classList.add("show");
+
+    input.focus();
+}
+
+
+function closeRename() {
+
+    document
+        .getElementById("rename-modal")
+        .classList.remove("show");
+}
+
+
+document
+    .getElementById("rename-modal")
+    .addEventListener("click", function(event) {
+
+        if (event.target === this) {
+            closeRename();
+        }
+
+    });
+
+
+    function copyResponse(button) {
+
+    const container = button.closest(".ai-response-container");
+
+    const response =
+        container.querySelector(".ai-bubble").innerText;
+
+    navigator.clipboard.writeText(response).then(function () {
+
+        const originalText = button.innerHTML;
+
+        button.innerHTML = "✓ Copied";
+
+        button.classList.add("copied");
+
+        setTimeout(function () {
+
+            button.innerHTML = originalText;
+
+            button.classList.remove("copied");
+
+        }, 1500);
+
+    });
+}
+
+</script>
+
+<div id="rename-modal" class="rename-modal">
+
+    <div class="rename-box">
+
+        <h3>Rename conversation</h3>
+
+        <form method="POST" id="rename-form">
+
+            {% csrf_token %}
+
+            <input
+                type="text"
+                name="title"
+                id="rename-input"
+                maxlength="200"
+                required
+            >
+
+            <div class="rename-actions">
+
+                <button
+                    type="button"
+                    class="rename-cancel"
+                    onclick="closeRename()"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="submit"
+                    class="rename-save"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<script>
+const sidebar = document.getElementById("sidebar");
+const menuButton = document.getElementById("menu-button");
+const sidebarOverlay = document.getElementById("sidebar-overlay");
+
+menuButton.addEventListener("click", function () {
+    sidebar.classList.add("open");
+    sidebarOverlay.classList.add("show");
+});
+
+sidebarOverlay.addEventListener("click", function () {
+    sidebar.classList.remove("open");
+    sidebarOverlay.classList.remove("show");
+});
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const codeBlocks = document.querySelectorAll(".ai-bubble pre");
+
+    codeBlocks.forEach(function (pre) {
+
+        // Prevent duplicate buttons
+        if (pre.querySelector(".code-copy-btn")) {
+            return;
+        }
+
+        const button = document.createElement("button");
+
+        button.className = "code-copy-btn";
+        button.type = "button";
+        button.innerHTML = "⧉ Copy";
+
+        button.addEventListener("click", async function () {
+
+            const code = pre.querySelector("code");
+
+            if (!code) return;
+
+            try {
+                await navigator.clipboard.writeText(
+                    code.innerText
+                );
+
+                button.innerHTML = "✓ Copied";
+
+                setTimeout(function () {
+                    button.innerHTML = "⧉ Copy";
+                }, 1500);
+
+            } catch (error) {
+                button.innerHTML = "Copy failed";
+            }
+
+        });
+
+        pre.appendChild(button);
+
+    });
+
+});
+</script>
+
+
+
+<script>
+const attachmentInput = document.getElementById("attachment");
+const filePreview = document.getElementById("file-preview");
+
+attachmentInput.addEventListener("change", function () {
+
+    filePreview.innerHTML = "";
+
+    if (!this.files.length) {
+        return;
+    }
+
+    const file = this.files[0];
+
+    if (file.type.startsWith("image/")) {
+
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+
+            filePreview.innerHTML = `
+                <div class="image-preview-card">
+                    <img src="${event.target.result}" alt="Preview">
+                    <span>${file.name}</span>
+                </div>
+            `;
+        };
+
+        reader.readAsDataURL(file);
+
+    } else {
+
+        filePreview.textContent =
+            "📎 " + file.name;
+
+    }
+
+});
+</script>
+
+
+
+<script>
+const chatSearch = document.getElementById("chat-search");
+
+if (chatSearch) {
+
+    chatSearch.addEventListener("input", function () {
+
+        const searchText =
+            this.value.toLowerCase().trim();
+
+        const chats =
+            document.querySelectorAll(".history-row");
+
+        chats.forEach(function (chat) {
+
+            const title =
+                chat.dataset.chatTitle || "";
+
+            if (title.includes(searchText)) {
+                chat.style.display = "flex";
+            } else {
+                chat.style.display = "none";
+            }
+
+        });
+
+    });
+
+}
+</script>
+
+
+
+<script>
+const voiceButton = document.getElementById("voice-button");
+const messageInput = document.getElementById("message-input");
+const recordingIndicator =
+    document.getElementById("recording-indicator");
+
+let mediaRecorder = null;
+let audioChunks = [];
+let recording = false;
+
+voiceButton.addEventListener("click", async function (event) {
+
+    event.preventDefault();
+
+    if (!recording) {
+
+        try {
+
+            const stream =
+                await navigator.mediaDevices.getUserMedia({
+                    audio: true
+                });
+
+            audioChunks = [];
+
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = function (event) {
+                if (event.data.size > 0) {
+                    audioChunks.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async function () {
+
+                stream.getTracks().forEach(function (track) {
+                    track.stop();
+                });
+
+                const audioBlob = new Blob(
+                    audioChunks,
+                    {
+                        type: "audio/webm"
+                    }
+                );
+
+                await sendAudioForTranscription(
+                    audioBlob
+                );
+            };
+
+            mediaRecorder.start();
+
+            recording = true;
+
+            voiceButton.classList.add("listening");
+            voiceButton.title = "Stop recording";
+            recordingIndicator.classList.add("show");
+
+        } catch (error) {
+
+            console.log(error);
+
+            alert(
+                "Microphone access could not be started."
+            );
+        }
+
+    } else {
+
+        mediaRecorder.stop();
+
+        recording = false;
+
+        voiceButton.classList.remove("listening");
+        voiceButton.title = "Voice input";
+        recordingIndicator.classList.remove("show");
+    }
+
+});
+
+
+async function sendAudioForTranscription(audioBlob) {
+
+    voiceButton.disabled = true;
+
+    const formData = new FormData();
+
+    formData.append(
+        "audio",
+        audioBlob,
+        "recording.webm"
+    );
+
+    const csrfToken =
+        document.querySelector(
+            "[name=csrfmiddlewaretoken]"
+        ).value;
+
+    try {
+
+        const response = await fetch(
+            "{% url 'transcribe_audio' %}",
+            {
+                method: "POST",
+
+                headers: {
+                    "X-CSRFToken": csrfToken
+                },
+
+                body: formData
+            }
+        );
+
+        const data = await response.json();
+
+        if (data.text) {
+
+            if (messageInput.value.trim()) {
+                messageInput.value += " " + data.text;
+            } else {
+                messageInput.value = data.text;
+            }
+
+            messageInput.focus();
+
+        } else {
+
+            alert(
+                data.error ||
+                "Could not understand the audio."
+            );
+        }
+
+    } catch (error) {
+
+        console.log(error);
+
+        alert(
+            "Voice transcription failed."
+        );
+
+    } finally {
+
+        voiceButton.disabled = false;
+    }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme") || "light";
+
+            document.documentElement.setAttribute(
+                "data-theme",
+                theme
+            );
+        })();
+    </script>
+
+    <link rel="stylesheet"
+          href="{% static 'assistant/style.css' %}">
+</head>
+
+<body>
+
+<div class="auth-page">
+
+    <div class="auth-card">
+
+        <h1>Welcome back</h1>
+
+        <p>Login to continue</p>
+
+        {% if error %}
+            <div class="auth-error">
+                {{ error }}
+            </div>
+        {% endif %}
+
+        <form method="POST">
+
+            {% csrf_token %}
+
+            <input
+                type="text"
+                name="username"
+                placeholder="Username"
+                required
+            >
+
+            <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                required
+            >
+
+            <button type="submit">
+                Login
+            </button>
+
+            <a href="{% url 'password_reset' %}" class="forgot-password">
+                Forgot password?
+            </a>
+
+        </form>
+
+        <p>
+            Don't have an account?
+
+            <a href="{% url 'register' %}">
+                Register
+            </a>
+        </p>
+
+    </div>
+
+</div>
+
+</body>
+</html>

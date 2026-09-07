@@ -1,0 +1,142 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Edit Profile | My AI</title>
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme") || "light";
+
+            document.documentElement.setAttribute(
+                "data-theme",
+                theme
+            );
+        })();
+    </script>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'assistant/style.css' %}"
+    >
+</head>
+
+<body>
+
+<div class="profile-shell">
+
+    <div class="profile-topbar">
+
+        <a href="{% url 'profile' %}" class="profile-back">
+            ← Back to Profile
+        </a>
+
+        <div class="profile-brand">
+            ✦ My AI
+        </div>
+
+    </div>
+
+
+    <main class="profile-wrapper">
+
+        <section class="profile-card-pro edit-profile-card">
+
+            <div class="edit-profile-header">
+
+                <div class="profile-avatar-pro edit-avatar">
+                    {{ request.user.username|first|upper }}
+                </div>
+
+                <div>
+                    <h1>Edit profile</h1>
+                    <p>Update your account information.</p>
+                </div>
+
+            </div>
+
+
+            {% if error %}
+                <div class="form-message form-error">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+
+            {% if success %}
+                <div class="form-message form-success">
+                    {{ success }}
+                </div>
+            {% endif %}
+
+
+            <form method="POST" class="edit-profile-form">
+
+                {% csrf_token %}
+
+                <div class="form-group">
+
+                    <label for="username">
+                        Username
+                    </label>
+
+                    <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        value="{{ request.user.username }}"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="email">
+                        Email
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value="{{ request.user.email }}"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="edit-profile-actions">
+
+                    <a
+                        href="{% url 'profile' %}"
+                        class="profile-btn edit-cancel"
+                    >
+                        Cancel
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="profile-btn edit-save"
+                    >
+                        Save Changes
+                    </button>
+
+                </div>
+
+            </form>
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>

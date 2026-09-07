@@ -1,0 +1,206 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Profile | My AI</title>
+
+    <script>
+        (function () {
+            const theme = localStorage.getItem("theme") || "light";
+
+            document.documentElement.setAttribute(
+                "data-theme",
+                theme
+            );
+        })();
+    </script>
+
+    <link
+        rel="stylesheet"
+        href="{% static 'assistant/style.css' %}"
+    >
+</head>
+
+<body>
+
+<div class="profile-shell">
+
+    <div class="profile-topbar">
+
+        <a href="{% url 'home' %}" class="profile-back">
+            ← Back to My AI
+        </a>
+
+        <div class="profile-brand">
+            ✦ My AI
+        </div>
+
+    </div>
+
+
+    <main class="profile-wrapper">
+
+        <section class="profile-card-pro">
+
+            <div class="profile-cover"></div>
+
+
+            <div class="profile-main">
+
+                <div class="profile-avatar-pro">
+
+                    {% if profile.avatar %}
+
+                        <img
+                            src="{{ profile.avatar.url }}"
+                            alt="Profile picture"
+                            class="profile-avatar-img"
+                        >
+
+                    {% else %}
+
+                        {{ request.user.username|first|upper }}
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="profile-name-block">
+
+                    <h1>{{ request.user.username }}</h1>
+
+                    <p class="profile-email">
+                        {{ request.user.email }}
+                    </p>
+
+                    <span class="profile-plan">
+                        Free Plan
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="profile-divider"></div>
+
+
+            <div class="profile-info-grid">
+
+                <div class="profile-info-box">
+                    <span class="profile-info-label">
+                        Username
+                    </span>
+
+                    <strong>
+                        {{ request.user.username }}
+                    </strong>
+                </div>
+
+
+                <div class="profile-info-box">
+                    <span class="profile-info-label">
+                        Email
+                    </span>
+
+                    <strong>
+                        {{ request.user.email }}
+                    </strong>
+                </div>
+
+
+
+
+
+                <div class="profile-info-box">
+                    <span class="profile-info-label">
+                        Account
+                    </span>
+
+                    <strong>
+                        Active
+                    </strong>
+                </div>
+
+
+                <div class="profile-info-box">
+                    <span class="profile-info-label">
+                        Plan
+                    </span>
+
+                    <strong>
+                        Free
+                    </strong>
+                </div>
+
+                <form
+                    method="POST"
+                    enctype="multipart/form-data"
+                    class="avatar-upload-form"
+                >
+
+                    {% csrf_token %}
+
+                    <label for="avatar" class="avatar-upload-btn">
+                        Change Profile Picture
+                    </label>
+
+                    <input
+                        type="file"
+                        id="avatar"
+                        name="avatar"
+                        accept="image/*"
+                        hidden
+                        onchange="this.form.submit()"
+                    >
+
+                </form>
+
+            </div>
+
+
+            <div class="profile-actions">
+
+                <a
+                    href="{% url 'home' %}"
+                    class="profile-btn profile-btn-primary"
+                >
+                    Continue to My AI
+                </a>
+
+                <a
+                    href="{% url 'edit_profile' %}"
+                    class="profile-btn edit-cancel"
+                >
+                    Edit Profile
+                </a>
+
+                <a
+                    href="{% url 'logout' %}"
+                    class="profile-btn profile-btn-danger"
+                >
+                    Logout
+                </a>
+
+                <a
+                    href="{% url 'settings' %}"
+                    class="profile-btn edit-cancel"
+                >
+                    Settings
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>
