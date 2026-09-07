@@ -82,5 +82,40 @@ path(
     views.export_conversation,
     name="export_conversation"
 ),
+
+path(
+    "api/test/",
+    views.api_test,
+    name="api_test"
+),
+
+path(
+    "api/register/",
+    views.api_register,
+    name="api_register"
+),
+path(
+    "api/login/",
+    views.api_login,
+    name="api_login"
+),
+
+path(
+    "api/conversations/",
+    views.api_conversations,
+    name="api_conversations"
+),
+
+path(
+    "api/conversations/create/",
+    views.api_create_conversation,
+    name="api_create_conversation"
+),
+
+path(
+    "api/conversations/<int:conversation_id>/message/",
+    views.api_send_message,
+    name="api_send_message"
+),
     
 ]

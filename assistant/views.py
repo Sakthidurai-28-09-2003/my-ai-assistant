@@ -25,6 +25,18 @@ from django.http import HttpResponse
 
 
 
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+
+from django.contrib.auth import authenticate
+from rest_framework.authtoken.models import Token
+
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+
+
+
 
 
 load_dotenv()
@@ -886,3 +898,198 @@ def export_conversation(request, conversation_id):
         )
 
         return response
+
+
+
+
+
+
+@api_view(["GET"])
+def api_test(request):
+    return Response({
+        "message": "My AI API is working"
+    })
+
+
+@api_view(["POST"])
+def api_register(request):
+
+    username = request.data.get("username", "").strip()
+    email = request.data.get("email", "").strip()
+    password = request.data.get("password", "")
+
+    if not username or not email or not password:
+        return Response(
+            {
+                "error": "Username, email and password are required."
+            },
+            status=400
+        )
+
+    if User.objects.filter(username=username).exists():
+        return Response(
+            {
+                "error": "Username already exists."
+            },
+            status=400
+        )
+
+    if User.objects.filter(email=email).exists():
+        return Response(
+            {
+                "error": "Email already exists."
+            },
+            status=400
+        )
+
+    user = User.objects.create_user(
+        username=username,
+        email=email,
+        password=password
+    )
+
+    return Response(
+        {
+            "message": "Account created successfully.",
+            "user_id": user.id,
+            "username": user.username,
+            "email": user.email,
+        },
+        status=201
+    )
+
+@api_view(["POST"])
+def api_login(request):
+    username = request.data.get("username", "").strip()
+    password = request.data.get("password", "")
+
+    if not username or not password:
+        return Response(
+            {"error": "Username and password are required."},
+            status=400
+        )
+
+    user = authenticate(
+        username=username,
+        password=password
+    )
+
+    if user is None:
+        return Response(
+            {"error": "Invalid username or password."},
+            status=400
+        )
+
+    token, created = Token.objects.get_or_create(user=user)
+
+    return Response({
+        "message": "Login successful.",
+        "user_id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "token": token.key,
+    })
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_conversations(request):
+
+    conversations = Conversation.objects.filter(
+        user=request.user
+    ).order_by("-updated_at")
+
+    data = []
+
+    for chat in conversations:
+        data.append({
+            "id": chat.id,
+            "title": chat.title,
+        })
+
+    return Response(data)
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_create_conversation(request):
+
+    title = request.data.get(
+        "title",
+        "New Chat"
+    ).strip()
+
+    if not title:
+        title = "New Chat"
+
+    conversation = Conversation.objects.create(
+        user=request.user,
+        title=title[:200]
+    )
+
+    return Response(
+        {
+            "id": conversation.id,
+            "title": conversation.title,
+            "message": "Conversation created successfully."
+        },
+        status=201
+    )
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_send_message(request, conversation_id):
+
+    conversation = get_object_or_404(
+        Conversation,
+        id=conversation_id,
+        user=request.user
+    )
+
+    user_message = request.data.get("message", "").strip()
+
+    if not user_message:
+        return Response(
+            {"error": "Message is required."},
+            status=400
+        )
+
+    Message.objects.create(
+        conversation=conversation,
+        role="user",
+        content=user_message
+    )
+
+    previous_messages = conversation.messages.order_by("created_at")
+
+    api_messages = []
+
+    for msg in previous_messages:
+        api_messages.append({
+            "role": msg.role,
+            "content": msg.content
+        })
+
+    try:
+        ai_text = call_ai(api_messages)
+
+        Message.objects.create(
+            conversation=conversation,
+            role="assistant",
+            content=ai_text
+        )
+
+        return Response({
+            "user_message": user_message,
+            "ai_response": ai_text
+        })
+
+    except Exception:
+        return Response(
+            {
+                "error": "AI service is temporarily unavailable."
+            },
+            status=503
+        )
