@@ -1093,3 +1093,33 @@ def api_send_message(request, conversation_id):
             },
             status=503
         )
+
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_conversation_messages(request, conversation_id):
+
+    conversation = get_object_or_404(
+        Conversation,
+        id=conversation_id,
+        user=request.user
+    )
+
+    messages = conversation.messages.order_by("created_at")
+
+    data = []
+
+    for message in messages:
+        data.append({
+            "id": message.id,
+            "role": message.role,
+            "content": message.content,
+        })
+
+    return Response({
+        "conversation_id": conversation.id,
+        "title": conversation.title,
+        "messages": data,
+    })

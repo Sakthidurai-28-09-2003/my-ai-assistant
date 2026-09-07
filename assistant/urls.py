@@ -2,6 +2,8 @@ from django.urls import path
 from . import views
 from django.contrib.auth import views as auth_views
 
+
+
 urlpatterns = [
     path("", views.home, name="home"),
 
@@ -116,6 +118,12 @@ path(
     "api/conversations/<int:conversation_id>/message/",
     views.api_send_message,
     name="api_send_message"
+),
+
+path(
+    "api/conversations/<int:conversation_id>/",
+    views.api_conversation_messages,
+    name="api_conversation_messages"
 ),
     
 ]
