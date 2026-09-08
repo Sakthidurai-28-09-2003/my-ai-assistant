@@ -131,5 +131,11 @@ path(
     views.api_password_reset,
     name="api_password_reset"
 ),
+
+path(
+    "api/profile/",
+    views.api_profile,
+    name="api_profile"
+),
     
 ]

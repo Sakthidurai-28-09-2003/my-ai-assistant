@@ -1355,3 +1355,57 @@ def password_reset_web(request):
         request,
         "assistant/password_reset.html"
     )
+
+
+@api_view(["GET", "POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_profile(request):
+
+    profile, created = Profile.objects.get_or_create(
+        user=request.user
+    )
+
+    if request.method == "POST":
+        username = request.data.get(
+            "username",
+            request.user.username
+        ).strip()
+
+        email = request.data.get(
+            "email",
+            request.user.email
+        ).strip()
+
+        if User.objects.exclude(
+            id=request.user.id
+        ).filter(username=username).exists():
+            return Response(
+                {"error": "Username already exists."},
+                status=400
+            )
+
+        if User.objects.exclude(
+            id=request.user.id
+        ).filter(email=email).exists():
+            return Response(
+                {"error": "Email already exists."},
+                status=400
+            )
+
+        request.user.username = username
+        request.user.email = email
+        request.user.save()
+
+    avatar_url = None
+
+    if profile.avatar:
+        avatar_url = request.build_absolute_uri(
+            profile.avatar.url
+        )
+
+    return Response({
+        "username": request.user.username,
+        "email": request.user.email,
+        "avatar": avatar_url,
+    })
