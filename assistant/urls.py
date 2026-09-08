@@ -149,5 +149,11 @@ path(
     views.api_transcribe_audio,
     name="api_transcribe_audio"
 ),
+
+path(
+    "api/upload/",
+    views.api_upload_file,
+    name="api_upload_file"
+),
     
 ]

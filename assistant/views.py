@@ -1526,3 +1526,24 @@ def api_transcribe_audio(request):
             },
             status=500
         )
+
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_upload_file(request):
+
+    uploaded_file = request.FILES.get("file")
+
+    if not uploaded_file:
+        return Response(
+            {"error": "No file received."},
+            status=400
+        )
+
+    return Response({
+        "name": uploaded_file.name,
+        "size": uploaded_file.size,
+        "message": "File uploaded successfully."
+    })
