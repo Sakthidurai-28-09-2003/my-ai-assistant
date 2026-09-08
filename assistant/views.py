@@ -1480,3 +1480,49 @@ def api_change_password(request):
         "message":
         "Password changed successfully."
     })
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_transcribe_audio(request):
+
+    audio_file = request.FILES.get("audio")
+
+    if not audio_file:
+        return Response(
+            {"error": "No audio received"},
+            status=400
+        )
+
+    try:
+        client = Groq(
+            api_key=os.getenv("GROQ_API_KEY")
+        )
+
+        transcription = client.audio.transcriptions.create(
+            file=(
+                audio_file.name,
+                audio_file.read()
+            ),
+            model="whisper-large-v3-turbo",
+            response_format="json",
+        )
+
+        return Response({
+            "text": transcription.text
+        })
+
+    except Exception as e:
+        print(
+            "MOBILE VOICE ERROR:",
+            str(e)
+        )
+
+        return Response(
+            {
+                "error":
+                "Could not transcribe audio"
+            },
+            status=500
+        )

@@ -143,5 +143,11 @@ path(
     views.api_change_password,
     name="api_change_password"
 ),
+
+path(
+    "api/transcribe/",
+    views.api_transcribe_audio,
+    name="api_transcribe_audio"
+),
     
 ]
