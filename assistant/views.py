@@ -35,6 +35,9 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
+from django.contrib.auth.forms import PasswordResetForm
+from django.conf import settings
+
 
 
 
@@ -1176,4 +1179,36 @@ def api_delete_conversation(request, conversation_id):
 
     return Response({
         "message": "Conversation deleted successfully."
+    })
+
+
+
+@api_view(["POST"])
+def api_password_reset(request):
+
+    email = request.data.get("email", "").strip()
+
+    if not email:
+        return Response(
+            {"error": "Email is required."},
+            status=400
+        )
+
+    form = PasswordResetForm({
+        "email": email
+    })
+
+    if form.is_valid():
+        form.save(
+            request=request,
+            use_https=True,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            email_template_name="registration/password_reset_email.html",
+        )
+
+    return Response({
+        "message": (
+            "If an account exists with this email, "
+            "a password reset link has been sent."
+        )
     })

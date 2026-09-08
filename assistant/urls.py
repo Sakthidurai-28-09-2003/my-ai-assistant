@@ -131,5 +131,11 @@ path(
     views.api_delete_conversation,
     name="api_delete_conversation"
 ),
+
+path(
+    "api/password-reset/",
+    views.api_password_reset,
+    name="api_password_reset"
+),
     
 ]
