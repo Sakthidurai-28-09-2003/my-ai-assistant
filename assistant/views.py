@@ -4,6 +4,15 @@ import ast
 import markdown
 import requests
 
+
+
+import resend
+
+from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import (
     authenticate,
@@ -1185,7 +1194,6 @@ def api_delete_conversation(request, conversation_id):
 
 @api_view(["POST"])
 def api_password_reset(request):
-
     email = request.data.get("email", "").strip()
 
     if not email:
@@ -1194,21 +1202,54 @@ def api_password_reset(request):
             status=400
         )
 
-    form = PasswordResetForm({
-        "email": email
-    })
+    User = get_user_model()
 
-    if form.is_valid():
-        form.save(
-            request=request,
-            use_https=True,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            email_template_name="registration/password_reset_email.html",
+    users = User.objects.filter(
+        email__iexact=email,
+        is_active=True
+    )
+
+    resend.api_key = os.getenv("RESEND_API_KEY")
+
+    for user in users:
+        uid = urlsafe_base64_encode(
+            force_bytes(user.pk)
         )
+
+        token = default_token_generator.make_token(user)
+
+        reset_url = (
+            "https://my-ai-assistant-6w6u.onrender.com/"
+            f"reset/{uid}/{token}/"
+        )
+
+        resend.Emails.send({
+            "from": "My AI <onboarding@resend.dev>",
+            "to": [email],
+            "subject": "Reset your My AI password",
+            "html": f"""
+                <h2>Reset your My AI password</h2>
+
+                <p>
+                    You requested a password reset
+                    for your My AI account.
+                </p>
+
+                <p>
+                    <a href="{reset_url}">
+                        Reset Password
+                    </a>
+                </p>
+
+                <p>
+                    If you did not request this,
+                    you can ignore this email.
+                </p>
+            """
+        })
 
     return Response({
-        "message": (
-            "If an account exists with this email, "
-            "a password reset link has been sent."
-        )
+        "message":
+        "If an account exists with this email, "
+        "a password reset link has been sent."
     })
