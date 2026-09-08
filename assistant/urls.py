@@ -137,5 +137,11 @@ path(
     views.api_profile,
     name="api_profile"
 ),
+
+path(
+    "api/change-password/",
+    views.api_change_password,
+    name="api_change_password"
+),
     
 ]

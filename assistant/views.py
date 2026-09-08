@@ -1409,3 +1409,74 @@ def api_profile(request):
         "email": request.user.email,
         "avatar": avatar_url,
     })
+
+
+
+@api_view(["POST"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_change_password(request):
+
+    current_password = request.data.get(
+        "current_password",
+        ""
+    )
+
+    new_password = request.data.get(
+        "new_password",
+        ""
+    )
+
+    confirm_password = request.data.get(
+        "confirm_password",
+        ""
+    )
+
+    if not current_password or not new_password or not confirm_password:
+        return Response(
+            {
+                "error":
+                "All password fields are required."
+            },
+            status=400
+        )
+
+    if not request.user.check_password(
+        current_password
+    ):
+        return Response(
+            {
+                "error":
+                "Current password is incorrect."
+            },
+            status=400
+        )
+
+    if new_password != confirm_password:
+        return Response(
+            {
+                "error":
+                "New passwords do not match."
+            },
+            status=400
+        )
+
+    if len(new_password) < 6:
+        return Response(
+            {
+                "error":
+                "Password must be at least 6 characters."
+            },
+            status=400
+        )
+
+    request.user.set_password(
+        new_password
+    )
+
+    request.user.save()
+
+    return Response({
+        "message":
+        "Password changed successfully."
+    })
