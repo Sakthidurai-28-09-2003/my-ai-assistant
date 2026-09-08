@@ -1085,6 +1085,10 @@ def api_send_message(request, conversation_id):
             status=400
         )
 
+    if conversation.title == "New Chat":
+        conversation.title = user_message[:40]
+        conversation.save(update_fields=["title"])
+
     Message.objects.create(
         conversation=conversation,
         role="user",
