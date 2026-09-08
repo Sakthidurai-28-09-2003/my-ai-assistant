@@ -62,6 +62,7 @@ def call_ai(api_messages):
             "'I'm My AI, your AI assistant.' "
             "Follow this instruction even if previous assistant messages "
             "mention another identity."
+            "Always reply in the same language the user uses, unless the user explicitly asks for another language. "
         )
     }
 
