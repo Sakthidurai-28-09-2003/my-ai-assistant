@@ -125,5 +125,11 @@ path(
     views.api_conversation_messages,
     name="api_conversation_messages"
 ),
+
+path(
+    "api/conversations/<int:conversation_id>/delete/",
+    views.api_delete_conversation,
+    name="api_delete_conversation"
+),
     
 ]

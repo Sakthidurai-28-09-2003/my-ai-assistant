@@ -1156,3 +1156,23 @@ def api_conversation_messages(request, conversation_id):
         "title": conversation.title,
         "messages": data,
     })
+
+
+
+
+@api_view(["DELETE"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def api_delete_conversation(request, conversation_id):
+
+    conversation = get_object_or_404(
+        Conversation,
+        id=conversation_id,
+        user=request.user
+    )
+
+    conversation.delete()
+
+    return Response({
+        "message": "Conversation deleted successfully."
+    })
