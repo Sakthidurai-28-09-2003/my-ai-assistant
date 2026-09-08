@@ -1542,8 +1542,73 @@ def api_upload_file(request):
             status=400
         )
 
-    return Response({
-        "name": uploaded_file.name,
-        "size": uploaded_file.size,
-        "message": "File uploaded successfully."
-    })
+    file_name = uploaded_file.name
+    content_type = uploaded_file.content_type or ""
+
+    extracted_text = ""
+
+    try:
+
+        # PDF
+        if content_type == "application/pdf" or file_name.lower().endswith(".pdf"):
+
+            reader = PdfReader(uploaded_file)
+
+            pages = []
+
+            for page in reader.pages:
+                text = page.extract_text()
+
+                if text:
+                    pages.append(text)
+
+            extracted_text = "\n".join(pages)
+
+        # TXT
+        elif content_type == "text/plain" or file_name.lower().endswith(".txt"):
+
+            extracted_text = uploaded_file.read().decode(
+                "utf-8",
+                errors="ignore"
+            )
+
+        # IMAGE
+        elif content_type.startswith("image/"):
+
+            return Response({
+                "name": file_name,
+                "type": "image",
+                "text": "",
+                "message": "Image uploaded successfully."
+            })
+
+        else:
+            return Response(
+                {
+                    "error":
+                    "This file type is not supported yet."
+                },
+                status=400
+            )
+
+        return Response({
+            "name": file_name,
+            "type": "document",
+            "text": extracted_text,
+            "message": "File processed successfully."
+        })
+
+    except Exception as e:
+
+        print(
+            "FILE PROCESSING ERROR:",
+            str(e)
+        )
+
+        return Response(
+            {
+                "error":
+                "Could not process the file."
+            },
+            status=500
+        )
