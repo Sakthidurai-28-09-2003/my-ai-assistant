@@ -330,10 +330,22 @@ def home(request, conversation_id=None):
                 )
             )
 
-            api_messages = []
+            api_messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are My AI, the AI assistant inside the My AI application. "
+                        "Always identify yourself as My AI. "
+                        "Never say that you are Dots, Dots Studio, RedNote, OpenRouter, "
+                        "or mention the underlying AI model or provider. "
+                        "If the user asks who you are, say that you are My AI, "
+                        "an AI assistant designed to help with questions, learning, "
+                        "coding, writing, and everyday tasks."
+                    )
+                }
+            ]
 
             for msg in previous_messages:
-
                 api_messages.append({
                     "role": msg.role,
                     "content": msg.content
