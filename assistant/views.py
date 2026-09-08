@@ -1223,30 +1223,42 @@ def api_password_reset(request):
             f"reset/{uid}/{token}/"
         )
 
-        resend.Emails.send({
-            "from": "My AI <onboarding@resend.dev>",
-            "to": [email],
-            "subject": "Reset your My AI password",
-            "html": f"""
-                <h2>Reset your My AI password</h2>
+        try:
+            resend.Emails.send({
+                "from": "My AI <onboarding@resend.dev>",
+                "to": [email],
+                "subject": "Reset your My AI password",
+                "html": f"""
+                    <h2>Reset your My AI password</h2>
 
-                <p>
-                    You requested a password reset
-                    for your My AI account.
-                </p>
+                    <p>
+                        You requested a password reset
+                        for your My AI account.
+                    </p>
 
-                <p>
-                    <a href="{reset_url}">
-                        Reset Password
-                    </a>
-                </p>
+                    <p>
+                        <a href="{reset_url}">
+                            Reset Password
+                        </a>
+                    </p>
 
-                <p>
-                    If you did not request this,
-                    you can ignore this email.
-                </p>
-            """
-        })
+                    <p>
+                        If you did not request this,
+                        you can ignore this email.
+                    </p>
+                """
+            })
+
+        except Exception as e:
+            print("RESEND ERROR:", str(e))
+
+            return Response(
+                {
+                    "error":
+                    "Could not send the reset email."
+                },
+                status=500
+            )
 
     return Response({
         "message":
