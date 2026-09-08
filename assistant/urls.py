@@ -31,14 +31,8 @@ urlpatterns = [
     path("settings/", views.settings_view, name="settings"),
     path(
     "password-reset/",
-    auth_views.PasswordResetView.as_view(
-        template_name="assistant/password_reset.html",
-        email_template_name="registration/password_reset_email.html",
-        extra_email_context={
-            "protocol": "http",
-        },
-    ),
-    name="password_reset",
+    views.password_reset_web,
+    name="password_reset"
 ),
 
 path(

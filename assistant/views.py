@@ -1265,3 +1265,93 @@ def api_password_reset(request):
         "If an account exists with this email, "
         "a password reset link has been sent."
     })
+
+
+def password_reset_web(request):
+
+    if request.method == "POST":
+
+        email = request.POST.get(
+            "email",
+            ""
+        ).strip()
+
+        if email:
+
+            User = get_user_model()
+
+            users = User.objects.filter(
+                email__iexact=email,
+                is_active=True
+            )
+
+            resend.api_key = os.getenv(
+                "RESEND_API_KEY"
+            )
+
+            for user in users:
+
+                uid = urlsafe_base64_encode(
+                    force_bytes(user.pk)
+                )
+
+                token = (
+                    default_token_generator
+                    .make_token(user)
+                )
+
+                reset_url = (
+                    "https://"
+                    "my-ai-assistant-6w6u.onrender.com/"
+                    f"reset/{uid}/{token}/"
+                )
+
+                try:
+
+                    resend.Emails.send({
+                        "from":
+                            "My AI <onboarding@resend.dev>",
+
+                        "to": [email],
+
+                        "subject":
+                            "Reset your My AI password",
+
+                        "html": f"""
+                            <h2>
+                                Reset your My AI password
+                            </h2>
+
+                            <p>
+                                You requested a password reset
+                                for your My AI account.
+                            </p>
+
+                            <p>
+                                <a href="{reset_url}">
+                                    Reset Password
+                                </a>
+                            </p>
+
+                            <p>
+                                If you did not request this,
+                                you can ignore this email.
+                            </p>
+                        """
+                    })
+
+                except Exception as e:
+                    print(
+                        "WEB RESEND ERROR:",
+                        str(e)
+                    )
+
+            return render(
+                request,
+                "assistant/password_reset_done.html"
+            )
+
+    return render(
+        request,
+        "assistant/password_reset.html"
+    )
