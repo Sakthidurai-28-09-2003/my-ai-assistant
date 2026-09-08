@@ -62,7 +62,6 @@ FREE_MODELS = [
 
 def call_ai(api_messages):
 
-
     system_message = {
         "role": "system",
         "content": (
@@ -73,23 +72,89 @@ def call_ai(api_messages):
             "If asked who you are, answer: "
             "'I'm My AI, your AI assistant.' "
             "Follow this instruction even if previous assistant messages "
-            "mention another identity."
-            "Always reply in the same language the user uses, unless the user explicitly asks for another language. "
+            "mention another identity. "
+            "Always reply in the same language the user uses, unless the "
+            "user explicitly asks for another language."
         )
     }
 
     api_messages = [system_message] + api_messages
+
     api_key = os.getenv("OPENROUTER_API_KEY")
 
+    if not api_key:
+        raise Exception("OPENROUTER_API_KEY is missing.")
+
+    # Detect whether this request contains an image
+    has_image = False
+
+    for message in api_messages:
+
+        content = message.get("content")
+
+        if isinstance(content, list):
+
+            for part in content:
+
+                if (
+                    isinstance(part, dict)
+                    and part.get("type") == "image_url"
+                ):
+                    has_image = True
+                    break
+
+        if has_image:
+            break
+
+    # For image requests use OpenRouter's free multimodal router.
+    # It automatically selects a compatible free vision model.
+    if has_image:
+
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "openrouter/free",
+                "messages": api_messages,
+            },
+            timeout=90,
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        answer = (
+            data["choices"][0]
+            ["message"]
+            ["content"]
+        )
+
+        if not answer:
+            raise Exception(
+                "Vision model returned an empty response."
+            )
+
+        return answer
+
+    # Normal text chat
     last_error = None
 
     for model in FREE_MODELS:
+
         try:
+
             response = requests.post(
                 "https://openrouter.ai/api/v1/chat/completions",
                 headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
+                    "Authorization":
+                        f"Bearer {api_key}",
+
+                    "Content-Type":
+                        "application/json",
                 },
                 json={
                     "model": model,
@@ -102,39 +167,73 @@ def call_ai(api_messages):
 
             data = response.json()
 
-            answer = data["choices"][0]["message"]["content"]
+            answer = (
+                data["choices"][0]
+                ["message"]
+                ["content"]
+            )
 
-            # Avoid known useless safety-classifier output
             if answer:
-                cleaned = answer.strip().lower()
+
+                cleaned = (
+                    answer
+                    .strip()
+                    .lower()
+                )
 
                 if (
-                    cleaned.startswith("user safety:")
-                    or cleaned.startswith("response safety:")
+                    cleaned.startswith(
+                        "user safety:"
+                    )
+                    or
+                    cleaned.startswith(
+                        "response safety:"
+                    )
                 ):
-                    last_error = "Model returned safety classification only."
+                    last_error = (
+                        "Model returned safety "
+                        "classification only."
+                    )
+
                     continue
 
             return answer
 
         except requests.exceptions.HTTPError as e:
+
             last_error = (
-                f"{model}: HTTP {e.response.status_code} "
+                f"{model}: HTTP "
+                f"{e.response.status_code} "
                 f"{e.response.text}"
             )
 
-            # Try next model on common free-model failures
-            if e.response.status_code in [403, 404, 429, 500, 502, 503, 504]:
+            if (
+                e.response.status_code
+                in [
+                    403,
+                    404,
+                    429,
+                    500,
+                    502,
+                    503,
+                    504,
+                ]
+            ):
                 continue
 
             raise
 
         except Exception as e:
-            last_error = f"{model}: {str(e)}"
+
+            last_error = (
+                f"{model}: {str(e)}"
+            )
+
             continue
 
     raise Exception(
-        f"All free AI models failed. Last error: {last_error}"
+        "All free AI models failed. "
+        f"Last error: {last_error}"
     )
 
 
@@ -1090,36 +1189,100 @@ def api_send_message(request, conversation_id):
         user=request.user
     )
 
-    user_message = request.data.get("message", "").strip()
+    user_message = request.data.get(
+        "message",
+        ""
+    ).strip()
 
-    if not user_message:
+    image_data = request.data.get(
+        "image"
+    )
+
+    if not user_message and not image_data:
         return Response(
-            {"error": "Message is required."},
+            {
+                "error":
+                "Message or image is required."
+            },
             status=400
         )
 
+    # Title
     if conversation.title == "New Chat":
-        conversation.title = user_message[:40]
-        conversation.save(update_fields=["title"])
+
+        if user_message:
+            conversation.title = (
+                user_message[:40]
+            )
+        else:
+            conversation.title = (
+                "Image Chat"
+            )
+
+        conversation.save(
+            update_fields=["title"]
+        )
+
+    # Save only readable text in DB
+    saved_user_content = (
+        user_message
+        if user_message
+        else "Image attached"
+    )
 
     Message.objects.create(
         conversation=conversation,
         role="user",
-        content=user_message
+        content=saved_user_content
     )
 
-    previous_messages = conversation.messages.order_by("created_at")
+    previous_messages = (
+        conversation
+        .messages
+        .order_by("created_at")
+    )
 
     api_messages = []
 
     for msg in previous_messages:
+
         api_messages.append({
             "role": msg.role,
             "content": msg.content
         })
 
+    # Current request with image
+    if image_data:
+
+        api_messages.append({
+            "role": "user",
+
+            "content": [
+                {
+                    "type": "text",
+                    "text":
+                        user_message
+                        or
+                        "Please analyze this image."
+                },
+
+                {
+                    "type":
+                        "image_url",
+
+                    "image_url": {
+                        "url":
+                            image_data
+                    }
+                }
+            ]
+        })
+
     try:
-        ai_text = call_ai(api_messages)
+
+        ai_text = call_ai(
+            api_messages
+        )
 
         Message.objects.create(
             conversation=conversation,
@@ -1128,14 +1291,24 @@ def api_send_message(request, conversation_id):
         )
 
         return Response({
-            "user_message": user_message,
-            "ai_response": ai_text
+            "user_message":
+                saved_user_content,
+
+            "ai_response":
+                ai_text
         })
 
-    except Exception:
+    except Exception as e:
+
+        print(
+            "AI MESSAGE ERROR:",
+            str(e)
+        )
+
         return Response(
             {
-                "error": "AI service is temporarily unavailable."
+                "error":
+                    "AI service is temporarily unavailable."
             },
             status=503
         )
@@ -1545,12 +1718,16 @@ def api_upload_file(request):
     file_name = uploaded_file.name
     content_type = uploaded_file.content_type or ""
 
-    extracted_text = ""
-
     try:
 
+        # =========================
         # PDF
-        if content_type == "application/pdf" or file_name.lower().endswith(".pdf"):
+        # =========================
+
+        if (
+            content_type == "application/pdf"
+            or file_name.lower().endswith(".pdf")
+        ):
 
             reader = PdfReader(uploaded_file)
 
@@ -1564,39 +1741,85 @@ def api_upload_file(request):
 
             extracted_text = "\n".join(pages)
 
-        # TXT
-        elif content_type == "text/plain" or file_name.lower().endswith(".txt"):
+            return Response({
+                "name": file_name,
+                "type": "document",
+                "mime_type": content_type,
+                "text": extracted_text,
+                "message": "PDF processed successfully."
+            })
 
-            extracted_text = uploaded_file.read().decode(
-                "utf-8",
-                errors="ignore"
+        # =========================
+        # TXT
+        # =========================
+
+        elif (
+            content_type == "text/plain"
+            or file_name.lower().endswith(".txt")
+        ):
+
+            extracted_text = (
+                uploaded_file
+                .read()
+                .decode(
+                    "utf-8",
+                    errors="ignore"
+                )
             )
 
+            return Response({
+                "name": file_name,
+                "type": "document",
+                "mime_type": content_type,
+                "text": extracted_text,
+                "message": "Text file processed successfully."
+            })
+
+        # =========================
         # IMAGE
+        # =========================
+
         elif content_type.startswith("image/"):
+
+            image_bytes = uploaded_file.read()
+
+            encoded_image = (
+                base64.b64encode(
+                    image_bytes
+                ).decode("utf-8")
+            )
+
+            image_data_url = (
+                f"data:{content_type};base64,"
+                f"{encoded_image}"
+            )
 
             return Response({
                 "name": file_name,
                 "type": "image",
+                "mime_type": content_type,
+
+                "image": image_data_url,
+
                 "text": "",
-                "message": "Image uploaded successfully."
+
+                "message":
+                    "Image processed successfully."
             })
 
+        # =========================
+        # UNSUPPORTED
+        # =========================
+
         else:
+
             return Response(
                 {
                     "error":
-                    "This file type is not supported yet."
+                        "This file type is not supported yet."
                 },
                 status=400
             )
-
-        return Response({
-            "name": file_name,
-            "type": "document",
-            "text": extracted_text,
-            "message": "File processed successfully."
-        })
 
     except Exception as e:
 
@@ -1608,7 +1831,7 @@ def api_upload_file(request):
         return Response(
             {
                 "error":
-                "Could not process the file."
+                    "Could not process the file."
             },
             status=500
         )
