@@ -1301,14 +1301,14 @@ def api_send_message(request, conversation_id):
     except Exception as e:
 
         print(
-            "AI MESSAGE ERROR:",
-            str(e)
+            "AI SEND ERROR:",
+            repr(e)
         )
 
         return Response(
             {
-                "error":
-                    "AI service is temporarily unavailable."
+                "error": "AI service is temporarily unavailable.",
+                "detail": str(e)
             },
             status=503
         )
