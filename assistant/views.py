@@ -61,6 +61,21 @@ FREE_MODELS = [
 
 def call_ai(api_messages):
 
+    print("CALL_AI NEW VERSION RUNNING")
+
+    latest_message = ""
+
+    for msg in reversed(api_messages):
+        if msg.get("role") == "user":
+            latest_message = str(
+                msg.get("content", "")
+            ).lower().strip()
+            break
+
+    print("LATEST USER MESSAGE:", latest_message)
+
+def call_ai(api_messages):
+
     # Get latest user message
     latest_message = ""
 
@@ -111,6 +126,35 @@ def call_ai(api_messages):
             "developed by Sakthidurai R. I'm designed "
             "to help with questions, learning, ideas, "
             "problem-solving, and everyday tasks."
+        )
+
+
+    if (
+            "who is the founder of my ai" in latest_message
+            or "who founded my ai" in latest_message
+            or "who created my ai" in latest_message
+            or "who developed my ai" in latest_message
+            or "who created you" in latest_message
+            or "who developed you" in latest_message
+            or "who is your founder" in latest_message
+        ):
+            print("IDENTITY OVERRIDE USED")
+
+            return (
+                "My AI was founded, created, and developed "
+                "by Sakthidurai R."
+            )
+
+    if (
+        "tell me about yourself" in latest_message
+        or "who are you" in latest_message
+        or "introduce yourself" in latest_message
+    ):
+        print("ABOUT OVERRIDE USED")
+
+        return (
+            "I'm My AI, an AI assistant created and "
+            "developed by Sakthidurai R."
         )
 
     # YOUR EXISTING SYSTEM MESSAGE CONTINUES HERE
