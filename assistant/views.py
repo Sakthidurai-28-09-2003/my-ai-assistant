@@ -59,6 +59,84 @@ FREE_MODELS = [
 ]
 
 
+def call_ai(api_messages):
+
+    # Get latest user message
+    latest_message = ""
+
+    for msg in reversed(api_messages):
+        if msg.get("role") == "user":
+            latest_message = str(
+                msg.get("content", "")
+            ).lower().strip()
+            break
+
+    # MY AI IDENTITY
+    founder_questions = [
+        "who is the founder of my ai",
+        "who founded my ai",
+        "who created my ai",
+        "who made my ai",
+        "who developed my ai",
+        "who created you",
+        "who made you",
+        "who developed you",
+        "who is your founder",
+        "who is your creator",
+        "who is your developer",
+    ]
+
+    if any(
+        question in latest_message
+        for question in founder_questions
+    ):
+        return (
+            "My AI was founded, created, and developed "
+            "by Sakthidurai R."
+        )
+
+    about_questions = [
+        "who are you",
+        "tell me about yourself",
+        "introduce yourself",
+        "what are you",
+    ]
+
+    if any(
+        question in latest_message
+        for question in about_questions
+    ):
+        return (
+            "I'm My AI, an AI assistant created and "
+            "developed by Sakthidurai R. I'm designed "
+            "to help with questions, learning, ideas, "
+            "problem-solving, and everyday tasks."
+        )
+
+    # YOUR EXISTING SYSTEM MESSAGE CONTINUES HERE
+
+    system_message = {
+        "role": "system",
+        "content": (
+            "You are My AI, an AI assistant created by Sakthidurai R. "
+            "My AI was founded, created, and developed by Sakthidurai R. "
+            "Sakthidurai R is the founder and developer of My AI. "
+
+            "Never claim that My AI was created, founded, or developed "
+            "by Dots Studio, Dots, RedNote, OpenRouter, or an underlying "
+            "model/provider. "
+
+            "Always reply in the same language the user uses unless "
+            "the user explicitly requests another language."
+        )
+    }
+
+    api_messages = [system_message] + api_messages
+
+    # KEEP THE REST OF YOUR EXISTING
+    # OPENROUTER CODE BELOW THIS
+
+
 
 def call_ai(api_messages):
 
