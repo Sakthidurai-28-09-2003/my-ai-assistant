@@ -1342,6 +1342,60 @@ def api_send_message(request, conversation_id):
         ""
     ).strip()
 
+
+    normalized = user_message.lower().strip()
+
+    identity_questions = [
+        "who is the founder of my ai",
+        "who founded my ai",
+        "who created my ai",
+        "who developed my ai",
+        "who made my ai",
+        "who created you",
+        "who developed you",
+        "who made you",
+        "who is your founder",
+        "who is your creator",
+        "tell me about yourself",
+        "who are you",
+        "introduce yourself",
+    ]
+
+    if any(q in normalized for q in identity_questions):
+
+        if (
+            "tell me about yourself" in normalized
+            or "who are you" in normalized
+            or "introduce yourself" in normalized
+        ):
+            ai_text = (
+                "I'm My AI, an AI assistant created and developed "
+                "by Sakthidurai R. My AI was founded by Sakthidurai R "
+                "to help with questions, learning, ideas, problem-solving, "
+                "and everyday tasks."
+            )
+        else:
+            ai_text = (
+                "My AI was founded, created, and developed by Sakthidurai R."
+            )
+
+        Message.objects.create(
+            conversation=conversation,
+            role="user",
+            content=user_message
+        )
+
+        Message.objects.create(
+            conversation=conversation,
+            role="assistant",
+            content=ai_text
+        )
+
+        return Response({
+            "user_message": user_message,
+            "ai_response": ai_text
+        })
+
     image_data = request.data.get(
         "image"
     )
